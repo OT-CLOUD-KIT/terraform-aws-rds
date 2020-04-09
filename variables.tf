@@ -1,45 +1,36 @@
 /*-------------------------------------------------------*/
 variable "cluster_identifier" {
-  type = string
-}
+  default = ""
+} 
 variable "database_name" {
-  type = string
+  default = ""
 }
 variable "master_username" {
-  type = string
+  default = ""
 }
 variable "master_password" {
-  type = string
+  default = ""
 }
 variable "backup_retention_period" {
-  type = number
-  default = 1
+  default = ""
 }
 variable "preferred_backup_window" {
-  type = string
+  default = ""
 }
 variable "preferred_maintenance_window" {
-  type = string
+  default = ""
 }
 variable "engine" {
-  type = string
+  default = ""
 }
 variable "engine_version" {
-  type = number
-}
-variable "vpc_security_group_ids" {
-  type = list(string)
-}
-variable "availability_zones" {
-  type = list(string)
-}
-variable "snapshot_identifier" {
-  type = string
   default = ""
 }
 variable "skip_final_snapshot" {
-  type = bool
-  default = true
+  default = ""
+}
+variable "availability_zones" {
+  type = list(string)
 }
 variable "environment_name" {
   default = ""
@@ -47,17 +38,23 @@ variable "environment_name" {
 variable "vpc_name" {
   default = ""
 }
+variable "vpc_security_group_ids" {
+  type = list(string) 
+}
+// variable "snapshot_identifier" {
+//   default = ""
+// }
 /*-------------------------------------------------------*/
+variable "count_rds" {
+  default = ""
+}
 variable "subnet_ids" {
   type = list(string)
-}
+} 
 /*-------------------------------------------------------*/
-variable "count" {
-  type = number
-}
-variable "instance_class" {
-  type = string
+variable "instance_type" {
+  default = ""
 }
 variable "publicly_accessible" {
-  type = bool
+  default = ""
 }

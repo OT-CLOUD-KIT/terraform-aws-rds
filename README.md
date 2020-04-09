@@ -14,31 +14,26 @@
 $   cat main.tf
 /*-------------------------------------------------------*/
 module "rds_cluster" {
-  source                  = "../"
-  cluster_identifier      = "opstree"
-  database_name           = "employeedb"
-  master_username         = "otaws"
-  master_password         = "foobarbaz"
-  backup_retention_period = 14
-  preferred_backup_window = "14:00-15:00"
-  engine                  = "aurora-mysql"
-  engine_version          = 5.7.12
-  vpc_security_group_ids  = [aws_security_group.frontend_sg.id]
-  environment_name        = "production"
-  vpc_name                = "prod_vpc"
-  subnet_ids              = ["subnet-2e0bd463","subnet-97851efe"]
-  count                   = 1
-  instance_class          = "db.t2.micro"
-  skip_final_snapshot    = true
-
-
-
-  # allocated_storage       = "20"
-  # storage_type            = "gp2"
-
-  # name                    = "opstree"
-
-
+  source                       = "../rds"
+  cluster_identifier           = "devcluster"
+  database_name                = "opstree"
+  master_username              = "opstree"
+  master_password              = "opstree"
+  backup_retention_period      = 14
+  preferred_backup_window      = "14:00-15:00"
+  preferred_maintenance_window = "sat:15:00-sat:16:00"
+  engine                       = "aurora-mysql"
+  engine_version               = "5.7.12"
+  vpc_security_group_ids       = [aws_security_group.frontend_sg.id]
+  vpc_name                     = "opstree"
+  environment_name             = "opstree-dev"
+  subnet_ids                   = ["subnet-4c093572","subnet-00c33421"]
+  instance_type                = "db.t2.small"
+  availability_zones           = ["us-east-1e", "us-east-1d"]
+  skip_final_snapshot          = true
+  #snapshot_identifier         = var.snapshot_identifier
+  publicly_accessible          = false
+  count_rds                    = 1
 }
 /*-------------------------------------------------------*/
 resource "aws_security_group" "frontend_sg" {

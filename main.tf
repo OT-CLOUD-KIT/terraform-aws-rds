@@ -19,9 +19,9 @@ resource "aws_rds_cluster" "aurora_cluster" {
 
   tags {
     Name        = "${var.environment_name}-${var.engine}-DB-Cluster"
-    VPC         = "${var.vpc_name}"
+    VPC         = var.vpc_name
     ManagedBy   = "Terraform"
-    Environment = "${var.environment_name}"
+    Environment = var.environment_name
   }
 
   lifecycle {
@@ -36,16 +36,16 @@ resource "aws_db_subnet_group" "subnet_group" {
   
   tags {
     Name        = "${var.environment_name}-${var.engine}-DB-Cluster"
-    VPC         = "${var.vpc_name}"
+    VPC         = var.vpc_name
     ManagedBy   = "Terraform"
-    Environment = "${var.environment_name}"
+    Environment = var.environment_name
   }
 }
 /*-------------------------------------------------------*/
 resource "aws_rds_cluster_instance" "aurora_cluster_instance" {
   count                = var.count #1
   identifier           = "${var.environment_name}-aurora-instance-${count.index}"
-  cluster_identifier   = "${aws_rds_cluster.aurora_cluster.id}"
+  cluster_identifier   = aws_rds_cluster.aurora_cluster.id
   instance_class       = var.instance_class
   engine               = var.engine #"aurora-mysql"
   engine_version       = var.engine_version #"5.7.12"
@@ -54,10 +54,10 @@ resource "aws_rds_cluster_instance" "aurora_cluster_instance" {
   
 
   tags {
-    Name        = "${var.environment_name}-Aurora-DB-Instance-${count.index}"
-    VPC         = "${var.vpc_name}"
+    Name        = "${var.environment_name}-${var.engine}-DB-Cluster"
+    VPC         = var.vpc_name
     ManagedBy   = "Terraform"
-    Environment = "${var.environment_name}"
+    Environment = var.environment_name
   }
 
   lifecycle {

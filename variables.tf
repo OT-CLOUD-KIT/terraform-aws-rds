@@ -1,17 +1,17 @@
 variable "kubernetes_nickname" {
-  type = string
+  type    = string
   default = "prd"
 }
 
 
 variable "environment" {
   default = "prod"
-  
+
 }
 
 variable "secret_manager_name" {
   description = "This name will be used as prefix for all the created resources"
-  default = "rds-db-secret-manager"
+  default     = "rds-db-secret-manager"
 }
 
 variable "secret_description" {
@@ -24,22 +24,24 @@ variable "secret_rotation_days" {
   description = "How often in days the secret will be rotated"
 }
 
-variable "filename" { 
+variable "filename" {
   default = "rotate-code-mysql"
 }
 
-variable "final_snapshot_identifier" {
-  default = "aurora-mysql"
+variable "final_snapshot_identifier_prefix" {
+  description = "The prefix name to use when creating a final snapshot on cluster destroy, appends a random 8 digits to name to ensure it's unique too."
+  type        = string
+  default     = "final"
 }
 
 variable "restore_rds_from_snapshot" {
   description = "If value is true, it is required to provide snapshot arn to TF_VAR_snapshot_identifier otherwise, leave it blank"
-  default = false
+  default     = false
 }
 
 variable "snapshot_identifier" {
   description = "Required, when TF_VAR_restore_rds_from_snapshot is set to true"
-  default = null
+  default     = null
 }
 
 variable "cluster_parameters" {
@@ -48,8 +50,8 @@ variable "cluster_parameters" {
     name         = string
     value        = string
   }))
-  default     = [
-      {
+  default = [
+    {
       name         = "character_set_client"
       value        = "utf8"
       apply_method = "pending-reboot"
@@ -64,8 +66,8 @@ variable "instance_parameters" {
     name         = string
     value        = string
   }))
-  default     = [
-      {
+  default = [
+    {
       name         = "tx_isolation"
       value        = "READ-COMMITTED"
       apply_method = "pending-reboot"
@@ -111,6 +113,114 @@ variable "kms_key_id" {
 }
 
 variable "customer_managed_kms_key" {
+  type    = bool
+  default = true
+}
+
+variable "rds_cluster_name" {
+  description = "Name used across resources created"
+  type        = string
+  default     = "rds-cluster"
+}
+
+variable "tags" {
+  description = "A map of tags to add to all resources."
+  type        = map(string)
+  default     = {}
+}
+
+variable "monitoring_interval" {
+  description = "The interval (seconds) between points when Enhanced Monitoring metrics are collected"
+  type        = number
+  default     = 0
+}
+
+variable "backup_retention_period" {
+  description = "How long to keep backups for (in days)"
+  type        = number
+  default     = 2
+}
+
+variable "database_name" {
+  description = "Name for an automatically created database on cluster creation"
+  type        = string
+  default     = "opstree-db"
+}
+
+variable "skip_final_snapshot" {
+  description = "Determines whether a final DB snapshot is created before the DB cluster is deleted. If true is specified, no DB snapshot is created."
+  type        = bool
+  default     = false
+}
+
+variable "deletion_protection" {
+  description = "If the DB instance should have deletion protection enabled"
+  type        = bool
+  default     = false
+}
+
+variable "db_engine" {
+  description = "Aurora database engine type, currently aurora, aurora-mysql or aurora-postgresql"
+  type        = string
+  default     = "aurora-mysql"
+}
+
+variable "engine_version" {
+  description = "Aurora database engine version"
+  type        = string
+  default     = "5.7.mysql_aurora.2.03.2"
+}
+
+variable "port" {
+  description = "The port on which to accept connections"
+  type        = string
+  default     = ""
+}
+
+variable "apply_immediately" {
+  description = "Determines whether or not any DB modifications are applied immediately, or during the maintenance window"
+  type        = bool
+  default     = false
+}
+
+variable "iam_database_authentication_enabled" {
+  description = "Specifies whether IAM Database authentication should be enabled or not. Not all versions and instances are supported. Refer to the AWS documentation to see which versions are supported"
+  type        = bool
+  default     = false
+}
+
+variable "iam_roles" {
+  description = "A List of ARNs for the IAM roles to associate to the RDS Cluster"
+  type        = list(string)
+  default     = []
+}
+
+variable "s3_import" {
+  description = "Configuration map used to restore from a Percona Xtrabackup in S3 (only MySQL is supported)"
+  type        = map(string)
+  default     = null
+}
+
+variable "instance_class" {
+  description = "The instance class to use. For details on CPU and memory"
+  type        = string
+  default     = "db.r5.xlarge"
+}
+
+variable "auto_minor_version_upgrade" {
+  description = "Determines whether minor engine upgrades will be performed automatically in the maintenance window"
   type        = bool
   default     = true
+}
+
+variable "cluster_instance_count" {
+  type        = number
+  default     = 2
+  description = "Number of DB instances to create in the cluster"
+}
+
+variable "instances_identifier" {
+  description = "The identifier for the RDS instance, if omitted, Terraform will assign a random, unique identifier"
+  type        = string
+  default     = "test"
 }

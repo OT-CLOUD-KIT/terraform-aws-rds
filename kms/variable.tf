@@ -9,17 +9,13 @@ variable "deletion_window_in_days" {
   default     = 30
 }
 
-variable "description" {
-  description = "The description of this KMS key"
-  type        = string
+variable "tags" {
+  description = "A map of tags to add to all resources."
+  type        = map(string)
+  default     = {}
 }
 
-variable "environment" {
-  description = "The environment this KMS key belongs to"
-  type        = string
-}
-
-variable "key_policy" {
+variable "kms_policy" {
   description = "The policy of the key usage"
   type        = string
   default     = ""

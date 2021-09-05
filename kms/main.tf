@@ -1,54 +1,17 @@
 resource "aws_kms_key" "key" {
-  description             = var.description
+  description             = "Key to encrypt and decrypt secret parameters"
   key_usage               = "ENCRYPT_DECRYPT"
-  policy                  = data.aws_iam_policy_document.cmk_key_policy.json
+  policy                  = var.kms_policy
   deletion_window_in_days = var.deletion_window_in_days
   is_enabled              = true
   enable_key_rotation     = true
 
-  tags = merge(
-    {
-      Description           = var.description
-      Environment           = var.environment
-      Name                  = var.alias_name
-      ManagedBy             = "Terraform"
-    }
-  )
+  tags = merge(var.tags, {
+    Name = var.alias_name
+  }) 
 }
 
 resource "aws_kms_alias" "key_alias" {
   name          = "alias/${var.alias_name}"
   target_key_id = aws_kms_key.key.id
-}
-
-
-data "aws_caller_identity" "current" {
-}
-
-# data "aws_iam_user" "terraform_svc" {
-#   user_name = "terraform_svc"
-# }
-
-data "aws_iam_policy_document" "cmk_key_policy" {
-  statement {
-    sid = "1"
-
-    effect = "Allow"
-
-    principals {
-      type = "AWS"
-
-      identifiers = [
-         "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
-      ]
-    }
-
-    actions = [
-      "kms:*",
-    ]
-
-    resources = [
-      "*",
-    ]
-  }
 }

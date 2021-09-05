@@ -7,7 +7,7 @@ locals {
   RdsParameterGroup        = "aurora-mysql5.7"
   NumClusterInstances      = 2
   EncryptRds               = true
-  RdsCmkId                 = module.rds_kms_key.key_arn
+  #RdsCmkId                 = module.rds_kms_key.key_arn
   RdsInstanceType          = "db.r5.xlarge"
   DbParameterGroupTemplate = "Aurora-RDS-Parameter-Group"
   monitoring_interval      = 10
@@ -15,7 +15,7 @@ locals {
 }
 
 resource "aws_security_group" "rds_security_group" {
-  name        = "ep-mysql-${var.kubernetes_nickname}-security-group"
+  name        = "mysql-${var.kubernetes_nickname}-security-group"
   description = "Allow Internal access to RDS"
   vpc_id      = local.vpc_id
 
@@ -24,7 +24,7 @@ resource "aws_security_group" "rds_security_group" {
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
-    cidr_blocks = [local.vpc_cidr_block,"172.16.0.0/12"]
+    cidr_blocks = [local.vpc_cidr_block, "172.16.0.0/12"]
   }
 
   egress {
@@ -34,72 +34,82 @@ resource "aws_security_group" "rds_security_group" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-   Name = "mysql-${var.kubernetes_nickname}-security-group"
-  }
+  tags = merge(var.tags, {
+    Name = "${var.environment}rds_cluster_sg"
+  })
 }
 
-resource "aws_rds_cluster" "EPRDSCluster" {
-  cluster_identifier = "ep-aurora-mysql-${var.kubernetes_nickname}"
-
-  engine         = local.DbEngine
-  engine_version = local.RdsVersion
-
-  storage_encrypted = var.storage_encrypted
-  kms_key_id        = var.storage_encrypted == "true"  && var.customer_managed_kms_key == "true" ? module.rds_kms_key.key_arn : (var.storage_encrypted == "true"  && var.customer_managed_kms_key == "false" ? data.aws_kms_key.by_alias.arn : ""  )
-  master_username = local.rds_master_user_credentials.username
-  master_password = local.rds_master_user_credentials.password
-
+resource "aws_rds_cluster" "rds_cluster" {
+  cluster_identifier              = "${var.environment}-${var.rds_cluster_name}"
+  engine                          = var.db_engine
+  engine_version                  = var.engine_version
+  storage_encrypted               = var.storage_encrypted
+  kms_key_id                      = var.storage_encrypted == "true" ? module.rds_kms_key[0].key_arn : ""
+  database_name                   = var.database_name
+  master_username                 = local.rds_master_user_credentials.username
+  master_password                 = local.rds_master_user_credentials.password
   db_subnet_group_name            = aws_db_subnet_group.BuildRDSSubnetGroup.name
   vpc_security_group_ids          = [aws_security_group.rds_security_group.id]
-  backup_retention_period         = "2"
-  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.AuroraDbClusterParameterGroup.name
-  skip_final_snapshot             = false
-  deletion_protection             = true
+  backup_retention_period         = var.backup_retention_period
+  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.rds_ClusterParameterGroup.name
+  skip_final_snapshot             = var.skip_final_snapshot
+  deletion_protection             = var.deletion_protection
+  apply_immediately                   = var.apply_immediately
+  port                             = var.port == "" ? (var.db_engine == "aurora-postgresql" ? 5432 : 3306) : var.port
   enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
-
-  final_snapshot_identifier       = "${var.final_snapshot_identifier}-${var.environment}-${formatdate("YYYY-MM-DD", timeadd(timestamp(), "24h"))}"
+  final_snapshot_identifier       = "${var.final_snapshot_identifier_prefix}-${var.rds_cluster_name}-${element(concat(random_id.snapshot_identifier.*.hex, [""]), 0)}"
   snapshot_identifier             = var.restore_rds_from_snapshot == "true" ? var.snapshot_identifier : null
+  iam_database_authentication_enabled = var.iam_database_authentication_enabled
+  iam_roles                           = var.iam_roles
 
-  tags = {
-     Name = "ep-aurora-mysql-${var.kubernetes_nickname}"
+  dynamic "s3_import" {
+    for_each = var.s3_import != null ? [var.s3_import] : []
+    content {
+      source_engine         = "mysql"
+      source_engine_version = s3_import.value.source_engine_version
+      bucket_name           = s3_import.value.bucket_name
+      bucket_prefix         = lookup(s3_import.value, "bucket_prefix", null)
+      ingestion_role        = s3_import.value.ingestion_role
+    }
   }
+  tags = merge(var.tags, {
+    Name = "${var.environment}-${var.rds_cluster_name}"
+  })
 }
 
-resource "aws_rds_cluster_instance" "EPRDSInstances" {
-  count = local.NumClusterInstances
-  depends_on = [
-    aws_rds_cluster.EPRDSCluster,
-  ]
+resource "aws_rds_cluster_instance" "rds_instances" {
+  count = var.cluster_instance_count
+  depends_on = [ aws_rds_cluster.rds_cluster]
 
-  engine                     = local.DbEngine
-  engine_version             = local.RdsVersion
-  identifier                 = "aurora-mysql-${var.kubernetes_nickname}-${count.index}"
-  cluster_identifier         = aws_rds_cluster.EPRDSCluster.cluster_identifier
-  auto_minor_version_upgrade = false
-  instance_class             = local.RdsInstanceType
-  db_parameter_group_name    = aws_db_parameter_group.EPRDSParameterGroup.name
+  engine                          = var.db_engine
+  engine_version                  = var.engine_version
+  identifier                 = "${var.environment}-${var.instances_identifier}-${count.index}"
+  cluster_identifier         = aws_rds_cluster.rds_cluster.cluster_identifier
+  auto_minor_version_upgrade = var.auto_minor_version_upgrade
+  instance_class             = var.instance_class
+  db_parameter_group_name    = aws_db_parameter_group.rds_ParameterGroup.name
   db_subnet_group_name       = aws_db_subnet_group.BuildRDSSubnetGroup.name
   promotion_tier             = try(lookup("aurora-mysql-${var.kubernetes_nickname}-${count.index}", "instance_promotion_tier"), count.index + 1)
+  apply_immediately               = var.apply_immediately
 
   # Enhanced monitoring
-  monitoring_interval        = var.enhanced_monitoring_role_enabled == "true" ? local.monitoring_interval : 0
-  monitoring_role_arn        = var.enhanced_monitoring_role_enabled == "true" ? aws_iam_role.rds_enhanced_monitoring[0].arn : ""
+  monitoring_interval = var.enhanced_monitoring_role_enabled == "true" ? var.monitoring_interval : 0
+  monitoring_role_arn = var.enhanced_monitoring_role_enabled == "true" ? aws_iam_role.rds_enhanced_monitoring[0].arn : ""
 
   performance_insights_enabled    = var.performance_insights_enabled
-  performance_insights_kms_key_id = var.performance_insights_kms_key_id
+  performance_insights_kms_key_id = var.performance_insights_enabled == "true" ? var.performance_insights_kms_key_id : ""
 
-  tags = {
-    Name = "aurora-mysql-${var.kubernetes_nickname}-${count.index}"
-  }
-  
+  tags = merge(var.tags, {
+    Name = "${var.environment}-${var.instances_identifier}-${count.index}"
+  })
+
 }
 
 
-resource "aws_rds_cluster_parameter_group" "AuroraDbClusterParameterGroup" {
-  name        = "aurora-mysql57-${var.kubernetes_nickname}"
+resource "aws_rds_cluster_parameter_group" "rds_ClusterParameterGroup" {
+  name        = "aurora-mysql57"
   family      = "aurora-mysql57"
-  description = "Parameter group for EP RDS instances."
+  description = "Parameter group for RDS instances."
 
   dynamic "parameter" {
     for_each = var.cluster_parameters
@@ -196,10 +206,10 @@ resource "aws_rds_cluster_parameter_group" "AuroraDbClusterParameterGroup" {
   # }
 }
 
-resource "aws_db_parameter_group" "EPRDSParameterGroup" {
-  name         = "aurora-mysql57-${var.kubernetes_nickname}"
+resource "aws_db_parameter_group" "rds_ParameterGroup" {
+  name        = "aurora-mysql57"
   family      = "aurora-mysql57"
-  description = "Parameter group for EP RDS instances."
+  description = "Parameter group for RDS instances."
 
   dynamic "parameter" {
     for_each = var.instance_parameters

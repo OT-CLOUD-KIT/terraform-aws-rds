@@ -30,3 +30,11 @@ resource "random_string" "root_password" {
   number  = true
   special = false
 }
+
+resource "random_string" "schema_suffix" {
+  length  = 8
+  upper   = true
+  lower   = true
+  number  = true
+  special = false
+}

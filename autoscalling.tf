@@ -7,7 +7,7 @@ resource "aws_appautoscaling_target" "read_replica_count" {
 
   max_capacity       = var.replica_scale_max
   min_capacity       = var.replica_scale_min
-  resource_id        = "cluster:${aws_rds_cluster.rds_cluster.cluster_identifier}"
+  resource_id        = "cluster:${aws_rds_cluster.rds_cluster.id}"
   scalable_dimension = "rds:cluster:ReadReplicaCount"
   service_namespace  = "rds"
 }
@@ -17,9 +17,9 @@ resource "aws_appautoscaling_policy" "autoscaling_read_replica_count" {
 
   name               = "target-metric"
   policy_type        = "TargetTrackingScaling"
-  resource_id        = "cluster:${aws_rds_cluster.rds_cluster.cluster_identifier}"
-  scalable_dimension = "rds:cluster:ReadReplicaCount"
-  service_namespace  = "rds"
+  service_namespace  = aws_appautoscaling_target.read_replica_count[0].service_namespace
+  scalable_dimension = aws_appautoscaling_target.read_replica_count[0].scalable_dimension
+  resource_id        = aws_appautoscaling_target.read_replica_count[0].resource_id
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {

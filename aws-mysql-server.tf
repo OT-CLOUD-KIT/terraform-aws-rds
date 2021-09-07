@@ -45,7 +45,7 @@ resource "aws_rds_cluster" "rds_cluster" {
   engine_version                  = var.engine_version
   storage_encrypted               = var.storage_encrypted
   kms_key_id                      = var.storage_encrypted == "true" ? module.rds_kms_key[0].key_arn : ""
-  database_name                   = var.database_name
+  database_name                   = "DB${random_string.schema_suffix.result}"
   master_username                 = local.rds_master_user_credentials.username
   master_password                 = local.rds_master_user_credentials.password
   db_subnet_group_name            = aws_db_subnet_group.BuildRDSSubnetGroup.name
@@ -108,7 +108,7 @@ resource "aws_rds_cluster_instance" "rds_instances" {
 
 resource "aws_rds_cluster_parameter_group" "rds_ClusterParameterGroup" {
   name        = "aurora-mysql57"
-  family      = "aurora-mysql57"
+  family      = "aurora-mysql5.7"
   description = "Parameter group for RDS instances."
 
   dynamic "parameter" {
@@ -208,7 +208,7 @@ resource "aws_rds_cluster_parameter_group" "rds_ClusterParameterGroup" {
 
 resource "aws_db_parameter_group" "rds_ParameterGroup" {
   name        = "aurora-mysql57"
-  family      = "aurora-mysql57"
+  family      = "aurora-mysql5.7"
   description = "Parameter group for RDS instances."
 
   dynamic "parameter" {

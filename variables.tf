@@ -224,3 +224,51 @@ variable "instances_identifier" {
   type        = string
   default     = "test"
 }
+
+variable "replica_scale_enabled" {
+  description = "Whether to enable autoscaling for RDS Aurora (MySQL) read replicas"
+  type        = bool
+  default     = true
+}
+
+variable "replica_scale_max" {
+  description = "Maximum number of read replicas permitted when autoscaling is enabled"
+  type        = number
+  default     = 5
+}
+
+variable "replica_scale_min" {
+  description = "Minimum number of read replicas permitted when autoscaling is enabled"
+  type        = number
+  default     = 4
+}
+
+variable "replica_scale_cpu" {
+  description = "CPU threshold which will initiate autoscaling"
+  type        = number
+  default     = 70
+}
+
+variable "replica_scale_connections" {
+  description = "Average number of connections threshold which will initiate autoscaling. Default value is 70% of db.r4.large's default max_connections"
+  type        = number
+  default     = 700
+}
+
+variable "replica_scale_in_cooldown" {
+  description = "Cooldown in seconds before allowing further scaling operations after a scale in"
+  type        = number
+  default     = 300
+}
+
+variable "replica_scale_out_cooldown" {
+  description = "Cooldown in seconds before allowing further scaling operations after a scale out"
+  type        = number
+  default     = 300
+}
+
+variable "predefined_metric_type" {
+  description = "The metric type to scale on. Valid values are RDSReaderAverageCPUUtilization and RDSReaderAverageDatabaseConnections"
+  type        = string
+  default     = "RDSReaderAverageCPUUtilization"
+}

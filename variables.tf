@@ -11,7 +11,7 @@ variable "environment" {
 
 variable "secret_manager_name" {
   description = "This name will be used as prefix for all the created resources"
-  default     = "rds-db-secret-manager"
+  default     = "rds-db-secret-manager-1"
 }
 
 variable "secret_description" {
@@ -85,7 +85,7 @@ variable "enabled_cloudwatch_logs_exports" {
 variable "enhanced_monitoring_role_enabled" {
   type        = bool
   description = "A boolean flag to enable/disable the creation of the enhanced monitoring IAM role. If set to `false`, the module will not create a new role and will use `rds_monitoring_role_arn` for enhanced monitoring"
-  default     = false
+  default     = true
 }
 
 variable "performance_insights_enabled" {
@@ -132,7 +132,7 @@ variable "tags" {
 variable "monitoring_interval" {
   description = "The interval (seconds) between points when Enhanced Monitoring metrics are collected"
   type        = number
-  default     = 0
+  default     = 10
 }
 
 variable "backup_retention_period" {

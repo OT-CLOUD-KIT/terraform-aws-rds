@@ -127,7 +127,7 @@ resource "aws_secretsmanager_secret_rotation" "rds_secret_rotation" {
 resource "aws_secretsmanager_secret" "secret" {
   depends_on  = [aws_rds_cluster.rds_cluster, aws_rds_cluster_instance.rds_instances]
   description = var.secret_description
-  kms_key_id  = module.secrets_kms_key.key_arn
+  kms_key_id  = module.secrets_kms_key[0].key_arn
   name        = "${var.environment}-${var.secret_manager_name}"
   tags = merge(var.tags, {
     Name = var.secret_manager_name

@@ -31,7 +31,8 @@ data "aws_iam_policy_document" "rds_cmk_key_policy" {
 
 module "rds_kms_key" {
   source = "./kms"
-  count = var.storage_encrypted == "true" ? 1 :0
+  count = 1
+  #count = var.storage_encrypted == "true" ? 1 : 0
   alias_name                  = "${var.environment}-rds-kms-key"
   deletion_window_in_days     = 7
   kms_policy                  =  data.aws_iam_policy_document.rds_cmk_key_policy.json
@@ -41,7 +42,8 @@ module "rds_kms_key" {
 
 module "secrets_kms_key" {
   source = "./kms"
-  alias_name                  = "${var.environment}-secrets-kms-key"
+  count = 1
+  alias_name                  = "${var.environment}-secrets-kms-key-test"
   deletion_window_in_days     = 7
   tags   = var.tags
   kms_policy  = <<POLICY

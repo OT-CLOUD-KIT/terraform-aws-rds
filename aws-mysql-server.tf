@@ -44,7 +44,7 @@ resource "aws_rds_cluster" "rds_cluster" {
   engine                          = var.db_engine
   engine_version                  = var.engine_version
   storage_encrypted               = var.storage_encrypted
-  kms_key_id                      = var.storage_encrypted == "true" ? module.rds_kms_key[0].key_arn : ""
+  kms_key_id                      = var.storage_encrypted == true ? module.rds_kms_key[0].key_arn : ""
   database_name                   = "DB${random_string.schema_suffix.result}"
   master_username                 = local.rds_master_user_credentials.username
   master_password                 = local.rds_master_user_credentials.password
@@ -58,7 +58,7 @@ resource "aws_rds_cluster" "rds_cluster" {
   port                             = var.port == "" ? (var.db_engine == "aurora-postgresql" ? 5432 : 3306) : var.port
   enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
   final_snapshot_identifier       = "${var.final_snapshot_identifier_prefix}-${var.rds_cluster_name}-${element(concat(random_id.snapshot_identifier.*.hex, [""]), 0)}"
-  snapshot_identifier             = var.restore_rds_from_snapshot == "true" ? var.snapshot_identifier : null
+  snapshot_identifier             = var.restore_rds_from_snapshot == true ? var.snapshot_identifier : null
   iam_database_authentication_enabled = var.iam_database_authentication_enabled
   iam_roles                           = var.iam_roles
 
@@ -93,11 +93,45 @@ resource "aws_rds_cluster_instance" "rds_instances" {
   apply_immediately               = var.apply_immediately
 
   # Enhanced monitoring
-  monitoring_interval = var.enhanced_monitoring_role_enabled == "true" ? var.monitoring_interval : 0
-  monitoring_role_arn = var.enhanced_monitoring_role_enabled == "true" ? aws_iam_role.rds_enhanced_monitoring[0].arn : ""
+  monitoring_interval = var.enhanced_monitoring_role_enabled == true ? var.monitoring_interval : 0
+  monitoring_role_arn = var.enhanced_monitoring_role_enabled == true ? aws_iam_role.rds_enhanced_monitoring[0].arn : ""
 
   performance_insights_enabled    = var.performance_insights_enabled
-  performance_insights_kms_key_id = var.performance_insights_enabled == "true" ? var.performance_insights_kms_key_id : ""
+  performance_insights_kms_key_id = var.performance_insights_enabled == true ? var.performance_insights_kms_key_id : ""
+
+  tags = merge(var.tags, {
+    Name = "${var.environment}-${var.instances_identifier}-${count.index}"
+  })
+
+}
+
+provider "aws" {
+  alias  = "secondary"
+  region = "us-east-1"
+  profile = "sandbox"
+}
+
+resource "aws_rds_cluster_instance" "replica" {
+  count = 1
+  depends_on = [ aws_rds_cluster.rds_cluster]
+  provider                  = aws.secondary
+  engine                          = var.db_engine
+  engine_version                  = var.engine_version
+  identifier                 = "${var.environment}-${var.instances_identifier}-${count.index}"
+  cluster_identifier         = aws_rds_cluster.rds_cluster.cluster_identifier
+  auto_minor_version_upgrade = var.auto_minor_version_upgrade
+  instance_class             = var.instance_class
+  db_parameter_group_name    = aws_db_parameter_group.rds_ParameterGroup.name
+  db_subnet_group_name       = aws_db_subnet_group.BuildRDSSubnetGroup.name
+  promotion_tier             = try(lookup("aurora-mysql-${var.kubernetes_nickname}-${count.index}", "instance_promotion_tier"), count.index + 1)
+  apply_immediately               = var.apply_immediately
+
+  # Enhanced monitoring
+  monitoring_interval = var.enhanced_monitoring_role_enabled == true ? var.monitoring_interval : 0
+  monitoring_role_arn = var.enhanced_monitoring_role_enabled == true ? aws_iam_role.rds_enhanced_monitoring[0].arn : ""
+
+  performance_insights_enabled    = var.performance_insights_enabled
+  performance_insights_kms_key_id = var.performance_insights_enabled == true ? var.performance_insights_kms_key_id : ""
 
   tags = merge(var.tags, {
     Name = "${var.environment}-${var.instances_identifier}-${count.index}"

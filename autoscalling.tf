@@ -3,7 +3,7 @@
 ################################################################################
 
 resource "aws_appautoscaling_target" "read_replica_count" {
-  count = var.replica_scale_enabled == "true" ? 1 : 0
+  count = var.replica_scale_enabled == true ? 1 : 0
 
   max_capacity       = var.replica_scale_max
   min_capacity       = var.replica_scale_min
@@ -13,7 +13,7 @@ resource "aws_appautoscaling_target" "read_replica_count" {
 }
 
 resource "aws_appautoscaling_policy" "autoscaling_read_replica_count" {
-  count = var.replica_scale_enabled == "true" ? 1 : 0
+  count = var.replica_scale_enabled == true ? 1 : 0
 
   name               = "target-metric"
   policy_type        = "TargetTrackingScaling"

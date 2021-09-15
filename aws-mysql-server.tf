@@ -1,19 +1,3 @@
-#-----------------------
-# AWS resources
-#-----------------------
-locals {
-  DbEngine                 = "aurora-mysql"
-  RdsVersion               = "5.7.mysql_aurora.2.03.2"
-  RdsParameterGroup        = "aurora-mysql5.7"
-  NumClusterInstances      = 2
-  EncryptRds               = true
-  #RdsCmkId                 = module.rds_kms_key.key_arn
-  RdsInstanceType          = "db.r5.xlarge"
-  DbParameterGroupTemplate = "Aurora-RDS-Parameter-Group"
-  monitoring_interval      = 10
-  db-port                  = "3306"
-}
-
 resource "aws_security_group" "rds_security_group" {
   name        = "mysql-${var.kubernetes_nickname}-security-group"
   description = "Allow Internal access to RDS"
@@ -105,44 +89,10 @@ resource "aws_rds_cluster_instance" "rds_instances" {
 
 }
 
-provider "aws" {
-  alias  = "secondary"
-  region = "us-east-1"
-  profile = "sandbox"
-}
-
-resource "aws_rds_cluster_instance" "replica" {
-  count = 1
-  depends_on = [ aws_rds_cluster.rds_cluster]
-  provider                  = aws.secondary
-  engine                          = var.db_engine
-  engine_version                  = var.engine_version
-  identifier                 = "${var.environment}-${var.instances_identifier}-${count.index}"
-  cluster_identifier         = aws_rds_cluster.rds_cluster.cluster_identifier
-  auto_minor_version_upgrade = var.auto_minor_version_upgrade
-  instance_class             = var.instance_class
-  db_parameter_group_name    = aws_db_parameter_group.rds_ParameterGroup.name
-  db_subnet_group_name       = aws_db_subnet_group.BuildRDSSubnetGroup.name
-  promotion_tier             = try(lookup("aurora-mysql-${var.kubernetes_nickname}-${count.index}", "instance_promotion_tier"), count.index + 1)
-  apply_immediately               = var.apply_immediately
-
-  # Enhanced monitoring
-  monitoring_interval = var.enhanced_monitoring_role_enabled == true ? var.monitoring_interval : 0
-  monitoring_role_arn = var.enhanced_monitoring_role_enabled == true ? aws_iam_role.rds_enhanced_monitoring[0].arn : ""
-
-  performance_insights_enabled    = var.performance_insights_enabled
-  performance_insights_kms_key_id = var.performance_insights_enabled == true ? var.performance_insights_kms_key_id : ""
-
-  tags = merge(var.tags, {
-    Name = "${var.environment}-${var.instances_identifier}-${count.index}"
-  })
-
-}
-
 
 resource "aws_rds_cluster_parameter_group" "rds_ClusterParameterGroup" {
-  name        = "aurora-mysql57"
-  family      = "aurora-mysql5.7"
+  name        = var.cluster_parameter_group_name
+  family      = var.cluster_parameter_family_name
   description = "Parameter group for RDS instances."
 
   dynamic "parameter" {
@@ -153,96 +103,11 @@ resource "aws_rds_cluster_parameter_group" "rds_ClusterParameterGroup" {
       value        = parameter.value.value
     }
   }
-
-  # parameter {
-  #   name  = "character_set_server"
-  #   value = "utf8mb4"
-  # }
-
-  # parameter {
-  #   name  = "character_set_client"
-  #   value = "utf8mb4"
-  # }
-
-  # parameter {
-  #   name  = "character_set_connection"
-  #   value = "utf8mb4"
-  # }
-
-  # parameter {
-  #   name  = "character_set_database"
-  #   value = "utf8mb4"
-  # }
-
-  # parameter {
-  #   name  = "character_set_results"
-  #   value = "utf8mb4"
-  # }
-
-  # parameter {
-  #   name  = "collation_connection"
-  #   value = "utf8_unicode_ci"
-  # }
-
-  # parameter {
-  #   name  = "collation_server"
-  #   value = "utf8mb4_unicode_ci"
-  # }
-
-  # parameter {
-  #   name  = "tx_isolation"
-  #   value = "READ-COMMITTED"
-  # }
-
-  # parameter {
-  #   name  = "max_connections"
-  #   value = "1000"
-  # }
-
-  # parameter {
-  #   name  = "general_log"
-  #   value = "1"
-  # }
-
-  # parameter {
-  #   name  = "long_query_time"
-  #   value = "4"
-  # }
-
-  # parameter {
-  #   name  = "server_audit_logging"
-  #   value = "1"
-  # }
-
-  # parameter {
-  #   name  = "server_audit_logs_upload"
-  #   value = "1"
-  # }
-
-  # parameter {
-  #   name  = "slow_query_log"
-  #   value = "1"
-  # }
-
-  # parameter {
-  #   name  = "server_audit_events"
-  #   value = "CONNECT, QUERY, QUERY_DCL, QUERY_DDL, QUERY_DML, TABLE"
-  # }
-
-  # parameter {
-  #   name  = "log_slow_admin_statements"
-  #   value = "1"
-  # }
-
-  # parameter {
-  #   name  = "log_slow_slave_statements"
-  #   value = "1"
-  # }
 }
 
 resource "aws_db_parameter_group" "rds_ParameterGroup" {
-  name        = "aurora-mysql57"
-  family      = "aurora-mysql5.7"
+  name        = var.db_parameter_group_name
+  family      = var.db_parameter_family_name
   description = "Parameter group for RDS instances."
 
   dynamic "parameter" {
@@ -253,38 +118,4 @@ resource "aws_db_parameter_group" "rds_ParameterGroup" {
       value        = parameter.value.value
     }
   }
-  # parameter {
-  #   name  = "tx_isolation"
-  #   value = "READ-COMMITTED"
-  # }
-
-  #   parameter {
-  #   name  = "general_log"
-  #   value = "1"
-  # }
-
-  # parameter {
-  #   name  = "long_query_time"
-  #   value = "4"
-  # }
-
-  # parameter {
-  #   name  = "slow_query_log"
-  #   value = "1"
-  # }
-
-  # parameter {
-  #   name  = "log_slow_admin_statements"
-  #   value = "1"
-  # }
-
-  # parameter {
-  #   name  = "log_slow_slave_statements"
-  #   value = "1"
-  # }
-}
-
-
-data "aws_kms_key" "by_alias" {
-  key_id = "alias/aws/rds"
 }

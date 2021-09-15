@@ -51,11 +51,11 @@ variable "cluster_parameters" {
     value        = string
   }))
   default = [
-    {
-      name         = "character_set_client"
-      value        = "utf8"
-      apply_method = "pending-reboot"
-    }
+    # {
+    #   name         = "character_set_client"
+    #   value        = "utf8"
+    #   apply_method = "pending-reboot"
+    # }
   ]
   description = "List of DB cluster parameters to apply"
 }
@@ -67,11 +67,11 @@ variable "instance_parameters" {
     value        = string
   }))
   default = [
-    {
-      name         = "tx_isolation"
-      value        = "READ-COMMITTED"
-      apply_method = "pending-reboot"
-    }
+    # {
+    #   name         = "tx_isolation"
+    #   value        = "READ-COMMITTED"
+    #   apply_method = "pending-reboot"
+    # }
   ]
   description = "List of DB instance parameters to apply"
 }
@@ -79,7 +79,8 @@ variable "instance_parameters" {
 variable "enabled_cloudwatch_logs_exports" {
   type        = list(string)
   description = "List of log types to export to cloudwatch. The following log types are supported: audit, error, general, slowquery"
-  default     = ["audit", "general", "slowquery", "error"]
+  #default     = ["audit", "general", "slowquery", "error"]
+  default = [ "postgresql" ]
 }
 
 variable "enhanced_monitoring_role_enabled" {
@@ -141,11 +142,31 @@ variable "backup_retention_period" {
   default     = 2
 }
 
-# variable "database_name" {
-#   description = "Name for an automatically created database on cluster creation"
-#   type        = string
-#   default     = "opstree-db"
-# }
+variable "db_parameter_group_name" {
+  description = "Name for DB Parameter group name"
+  type        = string
+  default     = "postgresql11"
+}
+
+variable "db_parameter_family_name" {
+  description = "Name for DB Parameter group name"
+  type        = string
+  default     = "aurora-postgresql11"
+}
+
+variable "cluster_parameter_family_name" {
+  description = "Name for DB Parameter group name"
+  type        = string
+  default     = "aurora-postgresql11"
+}
+
+variable "cluster_parameter_group_name" {
+  description = "Name for DB Parameter group name"
+  type        = string
+  default     = "postgresql11"
+}
+
+
 
 variable "skip_final_snapshot" {
   description = "Determines whether a final DB snapshot is created before the DB cluster is deleted. If true is specified, no DB snapshot is created."
@@ -162,13 +183,13 @@ variable "deletion_protection" {
 variable "db_engine" {
   description = "Aurora database engine type, currently aurora, aurora-mysql or aurora-postgresql"
   type        = string
-  default     = "aurora-mysql"
+  default     = "aurora-postgresql"
 }
 
 variable "engine_version" {
   description = "Aurora database engine version"
   type        = string
-  default     = "5.7.mysql_aurora.2.03.2"
+  default     = "11.9"
 }
 
 variable "port" {

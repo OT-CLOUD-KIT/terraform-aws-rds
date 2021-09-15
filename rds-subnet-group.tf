@@ -22,3 +22,13 @@ resource "aws_db_subnet_group" "BuildRDSSubnetGroup" {
     Name = "RDS-Subnet-Group"
   })
 }
+
+
+# resource "aws_db_subnet_group" "replicaRDSSubnetGroup" {
+#   provider                  = aws.secondary
+#   name       = "rds-subnet-group-${var.kubernetes_nickname}"
+#   subnet_ids = ["subnet-0f8895fabfc8a4296", "subnet-0781625664e9de11f"]
+#   tags = merge(var.tags, {
+#     Name = "RDS-Subnet-Group"
+#   })
+# }

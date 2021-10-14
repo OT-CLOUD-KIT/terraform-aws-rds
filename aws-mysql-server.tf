@@ -1,28 +1,3 @@
-resource "aws_security_group" "rds_security_group" {
-  name        = "mysql-${var.kubernetes_nickname}-security-group"
-  description = "Allow Internal access to RDS"
-  vpc_id      = local.vpc_id
-
-  ingress {
-    description = "TLS from VPC"
-    from_port   = 3306
-    to_port     = 3306
-    protocol    = "tcp"
-    cidr_blocks = [local.vpc_cidr_block, "172.16.0.0/12"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = merge(var.tags, {
-    Name = "${var.environment}rds_cluster_sg"
-  })
-}
-
 resource "aws_rds_cluster" "rds_cluster" {
   cluster_identifier              = "${var.environment}-${var.rds_cluster_name}"
   engine                          = var.db_engine
@@ -33,7 +8,7 @@ resource "aws_rds_cluster" "rds_cluster" {
   master_username                 = local.rds_master_user_credentials.username
   master_password                 = local.rds_master_user_credentials.password
   db_subnet_group_name            = aws_db_subnet_group.BuildRDSSubnetGroup.name
-  vpc_security_group_ids          = [aws_security_group.rds_security_group.id]
+  vpc_security_group_ids          = [var.rds_security_group]
   backup_retention_period         = var.backup_retention_period
   db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.rds_ClusterParameterGroup.name
   skip_final_snapshot             = var.skip_final_snapshot
@@ -73,7 +48,7 @@ resource "aws_rds_cluster_instance" "rds_instances" {
   instance_class             = var.instance_class
   db_parameter_group_name    = aws_db_parameter_group.rds_ParameterGroup.name
   db_subnet_group_name       = aws_db_subnet_group.BuildRDSSubnetGroup.name
-  promotion_tier             = try(lookup("aurora-mysql-${var.kubernetes_nickname}-${count.index}", "instance_promotion_tier"), count.index + 1)
+  promotion_tier             = try(lookup("aurora-mysql-${var.environment}-${count.index}", "instance_promotion_tier"), count.index + 1)
   apply_immediately               = var.apply_immediately
 
   # Enhanced monitoring

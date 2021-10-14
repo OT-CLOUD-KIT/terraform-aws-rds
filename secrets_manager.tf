@@ -3,6 +3,7 @@ data "aws_region" "current" {}
 # data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "lambda_rotation" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   name               = "${var.environment}-${var.secret_manager_name}-rotation_lambda"
   assume_role_policy = <<EOF
 {
@@ -22,6 +23,7 @@ EOF
 }
 
 resource "aws_iam_policy_attachment" "lambda" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   name       = "${var.environment}-${var.secret_manager_name}-lambda"
   roles      = ["${aws_iam_role.lambda_rotation.name}"]
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
@@ -55,6 +57,7 @@ data "aws_iam_policy_document" "SecretsManagerRDSMySQLRotationSingleUserRolePoli
 }
 
 resource "aws_iam_policy" "SecretsManagerRDSMySQLRotationSingleUserRolePolicy" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   name   = "${var.environment}-${var.secret_manager_name}"
   path   = "/"
   policy = data.aws_iam_policy_document.SecretsManagerRDSMySQLRotationSingleUserRolePolicy.json
@@ -62,12 +65,14 @@ resource "aws_iam_policy" "SecretsManagerRDSMySQLRotationSingleUserRolePolicy" {
 
 
 resource "aws_iam_policy_attachment" "SecretsManagerRDSMySQLRotationSingleUserRolePolicy" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   name       = "${var.environment}-${var.secret_manager_name}"
   roles      = ["${aws_iam_role.lambda_rotation.name}"]
   policy_arn = aws_iam_policy.SecretsManagerRDSMySQLRotationSingleUserRolePolicy.arn
 }
 
 resource "aws_security_group" "lambda" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   vpc_id = local.vpc_id
   name   = "${var.environment}-${var.secret_manager_name}-Lambda-SecretManager"
     tags = merge(var.tags, {
@@ -83,6 +88,7 @@ resource "aws_security_group" "lambda" {
 
 
 resource "aws_lambda_function" "rotate-code-mysql" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   depends_on       = [aws_rds_cluster.rds_cluster, aws_rds_cluster_instance.rds_instances]
   filename         = "${path.module}/${var.filename}.zip"
   function_name    = "${var.secret_manager_name}-${var.filename}"
@@ -107,6 +113,7 @@ resource "aws_lambda_function" "rotate-code-mysql" {
 }
 
 resource "aws_lambda_permission" "allow_secret_manager_call_Lambda" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   function_name = aws_lambda_function.rotate-code-mysql.function_name
   statement_id  = "AllowExecutionSecretManager"
   action        = "lambda:InvokeFunction"
@@ -115,6 +122,7 @@ resource "aws_lambda_permission" "allow_secret_manager_call_Lambda" {
 
 
 resource "aws_secretsmanager_secret_rotation" "rds_secret_rotation" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   depends_on          = [aws_rds_cluster.rds_cluster, aws_rds_cluster_instance.rds_instances]
   secret_id           = aws_secretsmanager_secret.secret.id
   rotation_lambda_arn = aws_lambda_function.rotate-code-mysql.arn
@@ -125,6 +133,7 @@ resource "aws_secretsmanager_secret_rotation" "rds_secret_rotation" {
 }
 
 resource "aws_secretsmanager_secret" "secret" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   depends_on  = [aws_rds_cluster.rds_cluster, aws_rds_cluster_instance.rds_instances]
   description = var.secret_description
   kms_key_id  = module.secrets_kms_key[0].key_arn
@@ -135,6 +144,7 @@ resource "aws_secretsmanager_secret" "secret" {
 }
 
 resource "aws_secretsmanager_secret_version" "secret" {
+  count = var.enabled_screts_manager == true ? 1 : 0
   depends_on = [aws_rds_cluster.rds_cluster, aws_rds_cluster_instance.rds_instances]
   lifecycle {
     ignore_changes = [

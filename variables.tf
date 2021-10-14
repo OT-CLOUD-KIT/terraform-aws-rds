@@ -1,14 +1,7 @@
-variable "kubernetes_nickname" {
-  type    = string
-  default = "prd"
-}
-
-
 variable "environment" {
   default = "prod"
 
 }
-
 variable "secret_manager_name" {
   description = "This name will be used as prefix for all the created resources"
   default     = "rds-db-secret-manager-1"
@@ -292,4 +285,22 @@ variable "predefined_metric_type" {
   description = "The metric type to scale on. Valid values are RDSReaderAverageCPUUtilization and RDSReaderAverageDatabaseConnections"
   type        = string
   default     = "RDSReaderAverageCPUUtilization"
+}
+
+variable "enabled_screts_manager" {
+  description = "Whether to enable autoscaling for RDS Aurora (MySQL) read replicas"
+  type        = bool
+  default     = false
+}
+
+variable "vpc_id" {
+  description = "VPC ID"
+  type        = string
+  default     = null
+}
+
+variable "private_subnet_ids" {
+  description = "Private subnet ids in which RDS & lambda function created"
+  type        = list(string)
+  default     = null
 }

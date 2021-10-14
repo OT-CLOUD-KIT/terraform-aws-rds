@@ -287,7 +287,7 @@ variable "predefined_metric_type" {
   default     = "RDSReaderAverageCPUUtilization"
 }
 
-variable "enabled_screts_manager" {
+variable "enabled_secrets_manager" {
   description = "Whether to enable autoscaling for RDS Aurora (MySQL) read replicas"
   type        = bool
   default     = false

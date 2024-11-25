@@ -1,7 +1,7 @@
 data "aws_partition" "current" {}
 data "aws_region" "current" {}
-# data "aws_caller_identity" "current" {}
 
+# Create IAM Role for Lambda if Secrets Manager is enabled
 resource "aws_iam_role" "lambda_rotation" {
   count = var.enabled_secrets_manager == true ? 1 : 0
   name               = "${var.environment}-${var.secret_manager_name}-rotation_lambda"
@@ -22,40 +22,45 @@ resource "aws_iam_role" "lambda_rotation" {
 EOF
 }
 
+# Attach the basic Lambda execution role policy to the Lambda role
 resource "aws_iam_policy_attachment" "lambda" {
   count = var.enabled_secrets_manager == true ? 1 : 0
   name       = "${var.environment}-${var.secret_manager_name}-lambda"
-  roles      = ["${aws_iam_role.lambda_rotation.name}"]
+  roles      = ["${aws_iam_role.lambda_rotation[count.index].name}"]  # Use count.index here
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# IAM Policy Document for Secrets Manager RDS MySQL Rotation
 data "aws_iam_policy_document" "SecretsManagerRDSMySQLRotationSingleUserRolePolicy" {
   statement {
     actions = [
       "ec2:CreateNetworkInterface",
       "ec2:DeleteNetworkInterface",
       "ec2:DescribeNetworkInterfaces",
-      "ec2:DetachNetworkInterface",
+      "ec2:DetachNetworkInterface"
     ]
-    resources = ["*", ]
+    resources = ["*"]
   }
+
   statement {
     actions = [
       "secretsmanager:DescribeSecret",
       "secretsmanager:GetSecretValue",
       "secretsmanager:PutSecretValue",
-      "secretsmanager:UpdateSecretVersionStage",
+      "secretsmanager:UpdateSecretVersionStage"
     ]
     resources = [
-      "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:*",
+      "arn:${data.aws_partition.current.partition}:secretsmanager:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:secret:*"
     ]
   }
+
   statement {
     actions   = ["secretsmanager:GetRandomPassword"]
-    resources = ["*", ]
+    resources = ["*"]
   }
 }
 
+# Create IAM Policy for Secrets Manager RDS MySQL Rotation
 resource "aws_iam_policy" "SecretsManagerRDSMySQLRotationSingleUserRolePolicy" {
   count = var.enabled_secrets_manager == true ? 1 : 0
   name   = "${var.environment}-${var.secret_manager_name}"
@@ -63,21 +68,23 @@ resource "aws_iam_policy" "SecretsManagerRDSMySQLRotationSingleUserRolePolicy" {
   policy = data.aws_iam_policy_document.SecretsManagerRDSMySQLRotationSingleUserRolePolicy.json
 }
 
-
+# Attach Secrets Manager Policy to Lambda role
 resource "aws_iam_policy_attachment" "SecretsManagerRDSMySQLRotationSingleUserRolePolicy" {
   count = var.enabled_secrets_manager == true ? 1 : 0
   name       = "${var.environment}-${var.secret_manager_name}"
-  roles      = ["${aws_iam_role.lambda_rotation.name}"]
-  policy_arn = aws_iam_policy.SecretsManagerRDSMySQLRotationSingleUserRolePolicy.arn
+  roles      = ["${aws_iam_role.lambda_rotation[count.index].name}"]  # Use count.index here
+  policy_arn = aws_iam_policy.SecretsManagerRDSMySQLRotationSingleUserRolePolicy[count.index].arn  # Use count.index here
 }
 
+# Security Group for Lambda function
 resource "aws_security_group" "lambda" {
   count = var.enabled_secrets_manager == true ? 1 : 0
   vpc_id = local.vpc_id
   name   = "${var.environment}-${var.secret_manager_name}-Lambda-SecretManager"
-    tags = merge(var.tags, {
+  tags = merge(var.tags, {
     Name = "${var.secret_manager_name}-lambda-sg"
   })
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -86,23 +93,25 @@ resource "aws_security_group" "lambda" {
   }
 }
 
-
+# Lambda Function for Secret Rotation
 resource "aws_lambda_function" "rotate-code-mysql" {
   count = var.enabled_secrets_manager == true ? 1 : 0
   depends_on       = [aws_rds_cluster.rds_cluster, aws_rds_cluster_instance.rds_instances]
   filename         = "${path.module}/${var.filename}.zip"
   function_name    = "${var.secret_manager_name}-${var.filename}"
-  role             = aws_iam_role.lambda_rotation.arn
+  role             = aws_iam_role.lambda_rotation[count.index].arn  # Use count.index here
   handler          = "lambda_function.lambda_handler"
   source_code_hash = filebase64sha256("${path.module}/${var.filename}.zip")
   runtime          = "python3.7"
   tags = merge(var.tags, {
     Name = "${var.environment}-${var.secret_manager_name}-Lambda-SecretManager"
   })
+
   vpc_config {
     subnet_ids         = local.private_subnet_ids
-    security_group_ids = ["${aws_security_group.lambda.id}"]
+    security_group_ids = [aws_security_group.lambda[count.index].id]  # Use count.index here
   }
+
   timeout     = 30
   description = "Conducts an AWS SecretsManager secret rotation for RDS MySQL using single user rotation scheme"
   environment {
@@ -112,26 +121,28 @@ resource "aws_lambda_function" "rotate-code-mysql" {
   }
 }
 
+# Lambda Permission to allow Secrets Manager to invoke Lambda
 resource "aws_lambda_permission" "allow_secret_manager_call_Lambda" {
   count = var.enabled_secrets_manager == true ? 1 : 0
-  function_name = aws_lambda_function.rotate-code-mysql.function_name
+  function_name = aws_lambda_function.rotate-code-mysql[count.index].function_name  # Use count.index here
   statement_id  = "AllowExecutionSecretManager"
   action        = "lambda:InvokeFunction"
   principal     = "secretsmanager.amazonaws.com"
 }
 
-
+# Secrets Manager Rotation Configuration
 resource "aws_secretsmanager_secret_rotation" "rds_secret_rotation" {
   count = var.enabled_secrets_manager == true ? 1 : 0
   depends_on          = [aws_rds_cluster.rds_cluster, aws_rds_cluster_instance.rds_instances]
-  secret_id           = aws_secretsmanager_secret.secret.id
-  rotation_lambda_arn = aws_lambda_function.rotate-code-mysql.arn
+  secret_id           = aws_secretsmanager_secret.secret[count.index].id  # Use count.index here
+  rotation_lambda_arn = aws_lambda_function.rotate-code-mysql[count.index].arn  # Use count.index here
 
   rotation_rules {
     automatically_after_days = var.secret_rotation_days
   }
 }
 
+# Create Secrets Manager Secret
 resource "aws_secretsmanager_secret" "secret" {
   count = var.enabled_secrets_manager == true ? 1 : 0
   depends_on  = [aws_rds_cluster.rds_cluster, aws_rds_cluster_instance.rds_instances]
@@ -146,12 +157,14 @@ resource "aws_secretsmanager_secret" "secret" {
 resource "aws_secretsmanager_secret_version" "secret" {
   count = var.enabled_secrets_manager == true ? 1 : 0
   depends_on = [aws_rds_cluster.rds_cluster, aws_rds_cluster_instance.rds_instances]
+  
   lifecycle {
     ignore_changes = [
       secret_string
     ]
   }
-  secret_id     = aws_secretsmanager_secret.secret.id
+
+  secret_id     = aws_secretsmanager_secret.secret[count.index].id  # Use count.index to reference the secret instance
   secret_string = <<EOF
 {
   "username": "${local.rds_master_user_credentials.username}",

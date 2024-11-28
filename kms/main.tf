@@ -8,8 +8,9 @@ resource "aws_kms_key" "key" {
 
   tags = merge(var.tags, {
     Name = var.alias_name
-  }) 
+  })
 }
+
 
 resource "aws_kms_alias" "key_alias" {
   name          = "alias/${var.alias_name}"

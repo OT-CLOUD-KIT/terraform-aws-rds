@@ -1,7 +1,7 @@
 variable "environment" {
   default = "prod"
-
 }
+
 variable "secret_manager_name" {
   description = "This name will be used as prefix for all the created resources"
   default     = "rds-db-secret-manager-1"
@@ -28,13 +28,15 @@ variable "final_snapshot_identifier_prefix" {
 }
 
 variable "restore_rds_from_snapshot" {
-  description = "If value is true, it is required to provide snapshot arn to TF_VAR_snapshot_identifier otherwise, leave it blank"
-  default     = false
+  description = "If true, the RDS cluster will be restored from the specified snapshot ARN."
+  type        = bool
+  default     = true
 }
 
 variable "snapshot_identifier" {
-  description = "Required, when TF_VAR_restore_rds_from_snapshot is set to true"
-  default     = null
+  description = "The ARN of the snapshot to restore from when restore_rds_from_snapshot is set to true."
+  type        = string
+  default     = "arn:aws:rds:ap-south-1:442042533290:snapshot:ayan-opstree-test"
 }
 
 variable "cluster_parameters" {
@@ -43,13 +45,7 @@ variable "cluster_parameters" {
     name         = string
     value        = string
   }))
-  default = [
-    # {
-    #   name         = "character_set_client"
-    #   value        = "utf8"
-    #   apply_method = "pending-reboot"
-    # }
-  ]
+  default     = []
   description = "List of DB cluster parameters to apply"
 }
 
@@ -59,21 +55,14 @@ variable "instance_parameters" {
     name         = string
     value        = string
   }))
-  default = [
-    # {
-    #   name         = "tx_isolation"
-    #   value        = "READ-COMMITTED"
-    #   apply_method = "pending-reboot"
-    # }
-  ]
+  default     = []
   description = "List of DB instance parameters to apply"
 }
 
 variable "enabled_cloudwatch_logs_exports" {
   type        = list(string)
   description = "List of log types to export to cloudwatch. The following log types are supported: audit, error, general, slowquery"
-  #default     = ["audit", "general", "slowquery", "error"]
-  default = [ "postgresql" ]
+  default     = ["slowquery"]
 }
 
 variable "enhanced_monitoring_role_enabled" {
@@ -91,7 +80,7 @@ variable "performance_insights_enabled" {
 variable "performance_insights_kms_key_id" {
   description = "The ARN for the KMS key to encrypt Performance Insights data"
   type        = string
-  default     = ""
+  default     = "arn:aws:kms:ap-south-1:442042533290:key/mrk-18fd2226ef2a406c9613d2e6f4047735"
 }
 
 variable "storage_encrypted" {
@@ -103,7 +92,7 @@ variable "storage_encrypted" {
 variable "kms_key_id" {
   description = "The ARN for the KMS encryption key if one is set to the cluster"
   type        = string
-  default     = ""
+  default     = "arn:aws:kms:ap-south-1:442042533290:key/mrk-18fd2226ef2a406c9613d2e6f4047735"
 }
 
 variable "customer_managed_kms_key" {
@@ -138,28 +127,26 @@ variable "backup_retention_period" {
 variable "db_parameter_group_name" {
   description = "Name for DB Parameter group name"
   type        = string
-  default     = "postgresql11"
+  default     = "default.mysql8.0"
 }
 
 variable "db_parameter_family_name" {
   description = "Name for DB Parameter group name"
   type        = string
-  default     = "aurora-postgresql11"
+  default     = "mysql8.0"
 }
 
 variable "cluster_parameter_family_name" {
   description = "Name for DB Parameter group name"
   type        = string
-  default     = "aurora-postgresql11"
+  default     = ""
 }
 
 variable "cluster_parameter_group_name" {
   description = "Name for DB Parameter group name"
   type        = string
-  default     = "postgresql11"
+  default     = ""
 }
-
-
 
 variable "skip_final_snapshot" {
   description = "Determines whether a final DB snapshot is created before the DB cluster is deleted. If true is specified, no DB snapshot is created."
@@ -176,13 +163,13 @@ variable "deletion_protection" {
 variable "db_engine" {
   description = "Aurora database engine type, currently aurora, aurora-mysql or aurora-postgresql"
   type        = string
-  default     = "aurora-postgresql"
+  default     = "mysql"
 }
 
 variable "engine_version" {
   description = "Aurora database engine version"
   type        = string
-  default     = "11.9"
+  default     = "8.0.39"
 }
 
 variable "port" {
@@ -218,7 +205,7 @@ variable "s3_import" {
 variable "instance_class" {
   description = "The instance class to use. For details on CPU and memory"
   type        = string
-  default     = "db.r5.xlarge"
+  default     = "db.t3.large"
 }
 
 variable "auto_minor_version_upgrade" {
@@ -229,14 +216,14 @@ variable "auto_minor_version_upgrade" {
 
 variable "cluster_instance_count" {
   type        = number
-  default     = 2
+  default     = 1
   description = "Number of DB instances to create in the cluster"
 }
 
 variable "instances_identifier" {
   description = "The identifier for the RDS instance, if omitted, Terraform will assign a random, unique identifier"
   type        = string
-  default     = "test"
+  default     = "opstree-test"
 }
 
 variable "replica_scale_enabled" {
@@ -290,17 +277,23 @@ variable "predefined_metric_type" {
 variable "enabled_secrets_manager" {
   description = "Whether to enable autoscaling for RDS Aurora (MySQL) read replicas"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "vpc_id" {
   description = "VPC ID"
   type        = string
-  default     = null
+  default     = "vpc-082129ed7e8f98076"
 }
 
 variable "private_subnet_ids" {
   description = "Private subnet ids in which RDS & lambda function created"
   type        = list(string)
   default     = null
+}
+
+variable "rds_security_group_id" {
+  description = "ID of the security group to attach to the RDS instances"
+  type        = string
+  default     = "sg-0206380f8bf996e47"  # Default to your existing security group ID
 }

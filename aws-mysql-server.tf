@@ -3,7 +3,7 @@ resource "aws_rds_cluster" "rds_cluster" {
   engine                          = var.db_engine
   engine_version                  = var.engine_version
   storage_encrypted               = var.storage_encrypted
-  kms_key_id                      = "arn:aws:kms:ap-south-1:442042533290:key/1f234c78-3f55-4450-be6a-99b063a90ff6"
+  kms_key_id                      = var.kms_key_id
   database_name                   = var.restore_rds_from_snapshot ? null : "DB${random_string.schema_suffix.result}"
   master_username                 = var.restore_rds_from_snapshot ? null : local.rds_master_user_credentials.username
   master_password                 = var.restore_rds_from_snapshot ? null : local.rds_master_user_credentials.password

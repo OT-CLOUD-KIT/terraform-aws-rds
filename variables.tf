@@ -36,7 +36,7 @@ variable "restore_rds_from_snapshot" {
 variable "snapshot_identifier" {
   description = "The ARN of the snapshot to restore from when restore_rds_from_snapshot is set to true."
   type        = string
-  default     = "arn:aws:rds:ap-south-1:442042533290:snapshot:ayan-test-opstree"
+  default     = "arn:aws:rds:ap-south-1:442042533290:snapshot:ayan-opstree-test"
 }
 
 variable "cluster_parameters" {
@@ -80,7 +80,7 @@ variable "performance_insights_enabled" {
 variable "performance_insights_kms_key_id" {
   description = "The ARN for the KMS key to encrypt Performance Insights data"
   type        = string
-  default     = "arn:aws:kms:ap-south-1:442042533290:key/1f234c78-3f55-4450-be6a-99b063a90ff6"
+  default     = "arn:aws:kms:ap-south-1:442042533290:key/mrk-18fd2226ef2a406c9613d2e6f4047735"
 }
 
 variable "storage_encrypted" {
@@ -92,7 +92,7 @@ variable "storage_encrypted" {
 variable "kms_key_id" {
   description = "The ARN for the KMS encryption key if one is set to the cluster"
   type        = string
-  default     = "arn:aws:kms:ap-south-1:442042533290:key/1f234c78-3f55-4450-be6a-99b063a90ff6"
+  default     = "arn:aws:kms:ap-south-1:442042533290:key/mrk-18fd2226ef2a406c9613d2e6f4047735"
 }
 
 variable "customer_managed_kms_key" {
@@ -205,7 +205,7 @@ variable "s3_import" {
 variable "instance_class" {
   description = "The instance class to use. For details on CPU and memory"
   type        = string
-  default     = "db.r5d.large"
+  default     = "db.t3.large"
 }
 
 variable "auto_minor_version_upgrade" {

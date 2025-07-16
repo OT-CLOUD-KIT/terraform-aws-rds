@@ -15,7 +15,7 @@ This Terraform module provisions a fully managed **AWS RDS** instance supporting
 ---
 
 ## Architecture
-<img width="1167" height="571" alt="Screenshot from 2025-07-16 11-51-58" src="https://github.com/user-attachments/assets/946ab503-ae79-471b-b250-f0d27b55ef8e" />
+<img width="1219" height="598" alt="image" src="https://github.com/user-attachments/assets/594c12b8-c8f5-4d0d-8f7a-5a07164a0280" />
 
 ___
 

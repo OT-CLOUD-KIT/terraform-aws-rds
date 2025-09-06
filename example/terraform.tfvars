@@ -1,13 +1,9 @@
 # -----------------------------------------
 # Naming & Tagging
 # -----------------------------------------
-bu       = "bp"
-program  = "ot"
-team     = "devops"
-app      = "ot"
-env      = "d"
-region   = "us-east-1"
-resource = "rds-ec2"
+app = "otcloud-kit"
+env = "dev"
+owner = "opstree"
 
 # -----------------------------------------
 # RDS Configuration

@@ -1,21 +1,3 @@
-module "standard_tags" {
-  source = "git@github.com:OT-CLOUD-KIT/terraform-aws-standard-tagging.git?ref=dev"
-
-  bu      = var.bu
-  program = var.program
-  app     = var.app
-  team    = var.team
-  region  = var.region
-  env     = var.env
-}
-
-module "naming" {
-  source   = "git@github.com:OT-CLOUD-KIT/terraform-aws-naming.git?ref=dev"
-  bu       = var.bu
-  env      = var.env
-  app      = var.app
-  resource = var.resource
-}
 
 module "rds_security_group" {
   count  = var.enable_public_rds_security_group_resource ? 1 : 0
@@ -23,8 +5,7 @@ module "rds_security_group" {
 
   name   = var.rds_sg_name
   vpc_id = var.vpc_id
-  tags   = module.standard_tags.standard_tags
-
+  tags   = var.tag
   aws_security_group_variables = [
     {
       description = "RDS SG Rules"
@@ -66,7 +47,7 @@ module "ec2_security_group" {
 
   name   = var.ec2_sg_name
   vpc_id = var.vpc_id
-  tags   = module.standard_tags.standard_tags
+  tags   = var.tag
 
   aws_security_group_variables = [
     {
@@ -113,13 +94,9 @@ module "rds" {
   rds_security_group_id = var.existing_rds_sg_id != "" ? var.existing_rds_sg_id : (
     var.enable_public_rds_security_group_resource ? module.rds_security_group[0].id[0] : ""
   )
-  bu      = var.bu
-  program = var.program
-  app     = var.app
-  env     = var.env
-  team    = var.team
-  region  = var.region
-
+app = var.app
+env = var.env
+owner = var.owner
   skip_final_snapshot                 = var.skip_final_snapshot
   apply_immediately                   = var.apply_immediately
   backup_retention_period             = var.backup_retention_period
@@ -174,12 +151,9 @@ module "ec2_with_optional_ebs" {
   enable_enclave = var.enable_enclave
   auto_recovery  = var.auto_recovery
 
-  bu                         = var.bu
-  program                    = var.program
-  team                       = var.team
-  app                        = var.app
-  env                        = var.env
-  region                     = var.region
+  app = var.app
+  owner = var.owner
+  env = var.env
   create_ebs_volume          = var.create_ebs_volume
   attach_existing_ebs_volume = var.attach_existing_ebs_volume
 
